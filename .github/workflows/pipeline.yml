@@ -97,16 +97,23 @@ jobs:
       # --------------------
       # UPLOAD REPORTS
       # --------------------
-      - name: Upload summary.md
+      - name: Prepare summary artifact folder
+        run: |
+          mkdir summary-artifact
+          mv summary.md summary-artifact/
+
+      - name: Upload summary via Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          name: Scan Summary (Markdown)
-          path: summary.md
-
+          path: summary-artifact
+          
+      - name: Prepare summary artifact folder
+        run: |
+          mkdir zap-report
+          mv zap_report.html zap-report/
+          
       - name: Upload ZAP Reports
         uses: actions/upload-pages-artifact@v3
         with:
           name: ZAP Reports
-          path: |
-            zap_report.html
-            zap_report.json
+          path: zap-report

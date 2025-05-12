@@ -2,7 +2,7 @@ from flask import Flask, request, render_template_string, redirect
 import sqlite3
 import os
 
-app = Flask(name)
+app = Flask(__name__)
 
 # Хардкод пароля (уязвимость)
 ADMIN_PASSWORD = "admin123"

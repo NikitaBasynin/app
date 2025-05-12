@@ -63,11 +63,38 @@ jobs:
         run: |
           docker run --network="host" \
             ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-            -t http://localhost:5000 #\
-#            -r zap_report.html || true
+            -t http://localhost:5000 \
+            -J zap_report.json || true
 
-#      - name: Upload ZAP report
-#       uses: actions/upload-artifact@v3
-#        with:
-#          name: ZAP HTML Report
-#          path: zap_report.html
+      - name: Collect summary from Semgrep
+        run: |
+          semgrep --config=auto . --json > semgrep.json || true
+          echo "## 🔍 Semgrep (SAST)" > summary.md
+          issues=$(jq '.results | length' semgrep.json)
+          echo "- Найдено уязвимостей: $issues" >> summary.md
+
+      - name: Collect summary from Trivy FS scan
+        run: |
+          trivy fs . --format json --output trivy-fs.json || true
+          echo "## 📦 Trivy (File Scan)" >> summary.md
+          vulns=$(jq '.Results[].Vulnerabilities | length' trivy-fs.json | awk '{s+=$1} END {print s}')
+          echo "- Найдено уязвимостей: $vulns" >> summary.md
+
+      - name: Collect summary from Docker image scan
+        run: |
+          trivy image insecure-app --format json --output trivy-image.json || true
+          echo "## 🐳 Trivy (Docker Image)" >> summary.md
+          imgvulns=$(jq '.Results[].Vulnerabilities | length' trivy-image.json | awk '{s+=$1} END {print s}')
+          echo "- Найдено уязвимостей: $imgvulns" >> summary.md
+
+      - name: Extract summary from ZAP
+        run: |
+          echo "## 🧪 OWASP ZAP (DAST)" >> summary.md
+          zap_vulns=$(jq '.site[].alerts | length' zap_report.json)
+          echo "- Найдено уязвимостей: $zap_vulns" >> summary.md
+
+      - name: Upload Markdown Summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: Scan Summary (Markdown)
+          path: summary.md

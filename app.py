@@ -86,5 +86,5 @@ def message():
     msg = request.args.get("msg", "")
     return f"<p>You said: {msg}</p>"  # XSS уязвимость
 
-if name == '__main__':
+if __name__ == '__main__':
     app.run(debug=True)

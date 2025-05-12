@@ -1,0 +1,52 @@
+name: Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  devsecops:
+    name: Run DevSecOps Scans
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      # --------------------
+      # SEMGREP (SAST)
+      # --------------------
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Run Semgrep (SAST)
+        run: semgrep --config=auto .  true
+
+      # --------------------
+      # TRIVY (SCA & FS scan)
+      # --------------------
+      - name: Install Trivy
+        run: |
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+      - name: Run Trivy on project folder (SCA + filesystem)
+        run: trivy fs .  true
+
+      # --------------------
+      # TRIVY on Docker image
+      # --------------------
+      - name: Build Docker image
+        run: docker build -t insecure-app .
+
+      - name: Scan Docker image with Trivy
+        run: trivy image insecure-app || true

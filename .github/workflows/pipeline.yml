@@ -60,11 +60,14 @@ jobs:
       - name: Start Flask app in Docker
         run: |
           docker run -d --rm --network zap-net --name insecure-app -p 5000:5000 insecure-app
-          sleep 10
+          sleep 15
+          run: docker ps -a
 
       - name: Run OWASP ZAP Baseline Scan (HTML + JSON)
         run: |
-          docker run --rm --network zap-net \
+          docker run --rm \
+            --user root \
+            --network zap-net \
             -v ${{ github.workspace }}:/zap/wrk \
             ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
             -t http://insecure-app:5000 \

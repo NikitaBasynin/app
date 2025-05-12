@@ -52,7 +52,7 @@ jobs:
         run: trivy image insecure-app || true
 
       # --------------------
-      # OWASP ZAP Baseline Scan (DAST)
+      # OWASP ZAP Baseline Scan (DAST) 
       # --------------------
       - name: Start Flask app in background
         run: |

@@ -94,7 +94,7 @@ jobs:
           echo "- Найдено уязвимостей: $zap_vulns" >> summary.md
 
       - name: Upload Markdown Summary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-pages-artifact@v3
         with:
           name: Scan Summary (Markdown)
           path: summary.md

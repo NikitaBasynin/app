@@ -54,19 +54,27 @@ jobs:
       # --------------------
       # OWASP ZAP Baseline Scan (DAST) 
       # --------------------
-      - name: Start Flask app in background
-        run: |
-          docker run -d -p 5000:5000 --name insecure-app insecure-app
-          sleep 10  # дать время приложению стартовать
+      - name: Create Docker network
+        run: docker network create zap-net
 
-      - name: Run OWASP ZAP Baseline scan
+      - name: Start insecure app
         run: |
-          docker run --network="host" \
+          docker run -d --rm \
+            --network zap-net \
+            --name insecure-app \
+            -p 5000:5000 \
+            insecure-app
+          sleep 10
+
+      - name: Run OWASP ZAP
+        run: |
+          docker run --rm \
+            --network zap-net \
             ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-            -t http://localhost:5000 \
+            -t http://insecure-app:5000 \
             -r zap_report.html || true
 
-      - name: Upload ZAP report
+      - name: Upload ZAP Report
         uses: actions/upload-artifact@v3.1.3
         with:
           name: ZAP HTML Report

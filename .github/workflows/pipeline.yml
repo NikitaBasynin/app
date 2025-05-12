@@ -50,3 +50,24 @@ jobs:
 
       - name: Scan Docker image with Trivy
         run: trivy image insecure-app || true
+
+      # --------------------
+      # OWASP ZAP Baseline Scan (DAST)
+      # --------------------
+      - name: Start Flask app in background
+        run: |
+          docker run -d -p 5000:5000 --name insecure-app insecure-app
+          sleep 10  # дать время приложению стартовать
+
+      - name: Run OWASP ZAP Baseline scan
+        run: |
+          docker run --network="host" \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://localhost:5000 \
+            -r zap_report.html || true
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v3
+        with:
+          name: ZAP HTML Report
+          path: zap_report.html

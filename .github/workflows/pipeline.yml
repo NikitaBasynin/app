@@ -67,7 +67,7 @@ jobs:
             -r zap_report.html || true
 
       - name: Upload ZAP report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3.1.3
         with:
           name: ZAP HTML Report
           path: zap_report.html

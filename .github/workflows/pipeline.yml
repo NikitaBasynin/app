@@ -62,7 +62,10 @@ jobs:
           docker run -d --rm --network zap-net --name insecure-app -p 5000:5000 insecure-app
           sleep 15
           docker ps -a
-
+      
+      - name: Check logs
+        run: docker logs insecure-app ||  true
+      
       - name: Run OWASP ZAP Baseline Scan (HTML + JSON)
         run: |
           docker run --rm \

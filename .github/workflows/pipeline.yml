@@ -26,7 +26,7 @@ jobs:
         run: pip install semgrep
 
       - name: Run Semgrep (SAST)
-        run: semgrep --config=auto . || true
+        run: semgrep --config=auto . --json > semgrep.json || true
 
       # --------------------
       # TRIVY (SCA & FS scan)
@@ -40,7 +40,7 @@ jobs:
           sudo apt-get install -y trivy
 
       - name: Run Trivy on project folder (SCA + filesystem)
-        run: trivy fs . || true
+        run: trivy fs . --format json --output trivy-fs.json || true
 
       # --------------------
       # TRIVY on Docker image
@@ -49,52 +49,57 @@ jobs:
         run: docker build -t insecure-app .
 
       - name: Scan Docker image with Trivy
-        run: trivy image insecure-app || true
+        run: trivy image insecure-app --format json --output trivy-image.json || true
 
       # --------------------
       # OWASP ZAP Baseline Scan (DAST)
       # --------------------
-      - name: Start Flask app in background
-        run: |
-          docker run -d -p 5000:5000 --name insecure-app insecure-app
-          sleep 10  # дать время приложению стартовать
+      - name: Create Docker network
+        run: docker network create zap-net
 
-      - name: Run OWASP ZAP Baseline scan
+      - name: Start Flask app in Docker
         run: |
-          docker run --network="host" \
+          docker run -d --rm --network zap-net --name insecure-app -p 5000:5000 insecure-app
+          sleep 10
+
+      - name: Run OWASP ZAP Baseline Scan (HTML + JSON)
+        run: |
+          docker run --rm --network zap-net \
             ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-            -t http://localhost:5000 \
+            -t http://insecure-app:5000 \
+            -r zap_report.html \
             -J zap_report.json || true
 
-      - name: Collect summary from Semgrep
+      # --------------------
+      # SUMMARY MARKDOWN
+      # --------------------
+      - name: Generate summary.md
         run: |
-          semgrep --config=auto . --json > semgrep.json || true
           echo "## 🔍 Semgrep (SAST)" > summary.md
-          issues=$(jq '.results | length' semgrep.json)
-          echo "- Найдено уязвимостей: $issues" >> summary.md
+          echo "- Уязвимостей: $(jq '.results | length' semgrep.json)" >> summary.md
 
-      - name: Collect summary from Trivy FS scan
-        run: |
-          trivy fs . --format json --output trivy-fs.json || true
           echo "## 📦 Trivy (File Scan)" >> summary.md
-          vulns=$(jq '.Results[].Vulnerabilities | length' trivy-fs.json | awk '{s+=$1} END {print s}')
-          echo "- Найдено уязвимостей: $vulns" >> summary.md
+          echo "- Уязвимостей: $(jq '.Results[].Vulnerabilities | length' trivy-fs.json | awk '{s+=$1} END {print s}')" >> summary.md
 
-      - name: Collect summary from Docker image scan
-        run: |
-          trivy image insecure-app --format json --output trivy-image.json || true
           echo "## 🐳 Trivy (Docker Image)" >> summary.md
-          imgvulns=$(jq '.Results[].Vulnerabilities | length' trivy-image.json | awk '{s+=$1} END {print s}')
-          echo "- Найдено уязвимостей: $imgvulns" >> summary.md
+          echo "- Уязвимостей: $(jq '.Results[].Vulnerabilities | length' trivy-image.json | awk '{s+=$1} END {print s}')" >> summary.md
 
-      - name: Extract summary from ZAP
-        run: |
           echo "## 🧪 OWASP ZAP (DAST)" >> summary.md
-          zap_vulns=$(jq '.site[].alerts | length' zap_report.json)
-          echo "- Найдено уязвимостей: $zap_vulns" >> summary.md
+          echo "- Уязвимостей: $(jq '.site[].alerts | length' zap_report.json)" >> summary.md
 
-      - name: Upload Markdown Summary
+      # --------------------
+      # UPLOAD REPORTS
+      # --------------------
+      - name: Upload summary.md
         uses: actions/upload-pages-artifact@v3
         with:
           name: Scan Summary (Markdown)
           path: summary.md
+
+      - name: Upload ZAP Reports
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: ZAP Reports
+          path: |
+            zap_report.html
+            zap_report.json

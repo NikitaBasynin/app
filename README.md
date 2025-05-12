@@ -20,9 +20,10 @@ pip install -r requirements.txt
 
 # Запусти приложение
 python app.py
-
+```
 
 ## 🐳 Docker
 ```bash
 docker build -t insecure-app .
 docker run -p 5000:5000 insecure-app
+```

@@ -25,7 +25,10 @@ jobs:
       - name: Install Semgrep
         run: pip install semgrep
 
-      - name: Run Semgrep (SAST)
+      - name: Run Semgrep (SAST) - CLI
+        run: semgrep --config=auto . || true
+
+      - name: Run Semgrep (SAST) - JSON
         run: semgrep --config=auto . --json > semgrep.json || true
 
       # --------------------
@@ -39,7 +42,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y trivy
 
-      - name: Run Trivy on project folder (SCA + filesystem)
+      - name: Run Trivy on project folder (SCA + filesystem) - CLI
+        run: trivy fs . || true
+
+      - name: Run Trivy on project folder (SCA + filesystem) - JSON
         run: trivy fs . --format json --output trivy-fs.json || true
 
       # --------------------
@@ -48,7 +54,10 @@ jobs:
       - name: Build Docker image
         run: docker build -t insecure-app .
 
-      - name: Scan Docker image with Trivy
+      - name: Scan Docker image with Trivy - CLI
+        run: trivy image insecure-app || true
+
+      - name: Scan Docker image with Trivy - JSON
         run: trivy image insecure-app --format json --output trivy-image.json || true
 
       # --------------------

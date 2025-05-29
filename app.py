@@ -6,6 +6,8 @@ app = Flask(__name__)
 
 # Хардкод пароля (уязвимость)
 ADMIN_PASSWORD = "admin123"
+AWS_SECRET_ACCESS_KEY = "AKIA1234567890FAKEKEY"
+
 
 # Создание БД при первом запуске
 def init_db():

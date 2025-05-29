@@ -7,6 +7,7 @@ Pet-проект для демонстрации базовых практик D
         <img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
     </a>
 </p>  
+
 ## 🔧 Что внутри
 
 - Уязвимое Flask-приложение
